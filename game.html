@@ -1,0 +1,256 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+  <head>
+    <title>HVD-2014</title>
+    <link href="stylesheets/screen.css" media="all" rel="stylesheet" type="text/css"/>
+    <script src="http://d3lp1msu2r81bx.cloudfront.net/kjs/js/lib/kinetic-v5.0.1.min.js"></script>
+    <script language="javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.4.4/jquery.min.js" type="text/javascript"></script><script language="javascript" src="javascripts/jquery.hotkeys.js" type="text/javascript"></script><script language="javascript" src="javascripts/key_status.js" type="text/javascript"></script><script language="javascript" src="javascripts/util.js" type="text/javascript"></script><script language="javascript" src="javascripts/sprite.js" type="text/javascript"></script><script language="javascript" src="javascripts/sound.js" type="text/javascript"></script>
+  </head>
+  <body>
+  </body>
+  
+   <script type='text/javascript'>
+
+		//Defining the canvas   
+    var CANVAS_WIDTH = 480;
+		var CANVAS_HEIGHT = 320;
+    var CANVAS1_WIDTH = 150;
+    var CANVAS1_HEIGHT = 320;
+    var STAR_X = 10;
+    var STAR_Y = 90;
+    
+
+		var canvasElement = $("<canvas id='myCanvas' width='" + CANVAS_WIDTH + "' height='" + CANVAS_HEIGHT + "'></canvas>");
+    var canvasElement1 = $("<canvas id='tCanvas' width='" + CANVAS1_WIDTH + "' height='" + CANVAS1_HEIGHT + "'></canvas>");
+		
+    var canvas = canvasElement.get(0).getContext("2d");
+    var canvas1 = canvasElement1.get(0).getContext("2d");
+
+    canvasElement.appendTo('body');
+    canvasElement1.appendTo('body');
+    document.getElementById("myCanvas").style.background = "#FEF0DB";
+    document.getElementById("tCanvas").style.background = "#FEF0DB";
+
+   
+		var FPS = 30;
+    var count = 0;
+    var timeTicks = 0;
+
+    // Main game running logic
+
+		setInterval(function() {
+      update();
+      draw();
+      timeTicks = timeTicks + 1;
+     
+		}, 1000/FPS);
+
+    
+		
+	 // Defining Player and its function
+
+    var player = {
+    x: 220,
+    y: 270,
+    width: 32,
+    height: 32,
+    };
+
+    player.sprite = Sprite("cookiemonster");
+    player.draw = function() {
+        this.sprite.draw(canvas, this.x, this.y);
+      };
+
+    player.explode = function() {
+          this.active = false; 
+        };  
+
+    // Defining the collectibles and their functions
+
+    collection = [];
+		function collect(I) {
+ 			  I = I || {};
+
+  			I.active = true;
+  			I.age = Math.floor(Math.random() * 128);
+
+  			
+  			I.sprite = Sprite("cookie");
+
+  			I.x = CANVAS_WIDTH / 4 + Math.random() * CANVAS_WIDTH / 2;
+  			I.y = 0;
+  			I.xVelocity = 0
+  			I.yVelocity = 2;
+
+  			I.width = 32;
+  			I.height = 32;
+
+  			I.inBounds = function() {
+    			return I.x >= 0 && I.x <= CANVAS_WIDTH &&
+      			I.y >= 0 && I.y <= CANVAS_HEIGHT;
+  				};
+
+  			I.draw = function() {
+    			
+				this.sprite.draw(canvas, this.x, this.y);
+  				};
+
+  			I.update = function() {
+    			I.x += I.xVelocity;
+    			I.y += I.yVelocity;
+
+    			I.xVelocity = 3 * Math.sin(I.age * Math.PI / 64);
+
+    			I.age++;
+
+    			I.active = I.active && I.inBounds();
+  			};
+
+         I.explode = function() {
+            this.active = false;
+            
+          };
+
+  			return I;
+		};
+
+			function update(){
+		
+
+  			
+        if (keydown.left) {
+    			player.x -= 5;
+  				}
+
+  			if (keydown.right) {
+    			player.x += 5;
+  				}
+
+        if (keydown.space) {
+           
+     
+        }
+
+  			player.x = player.x.clamp(0, CANVAS_WIDTH - player.width)
+
+  			collection.forEach(function(collect) {
+    			collect.update();
+  				});
+
+  			collection = collection.filter(function(collect) {
+    		return collect.active;
+  				});
+
+  			if(Math.random() < 0.1) {
+    			collection.push(collect());
+  				}
+
+  			handleCollisions();
+
+        if(timeTicks == 500) {
+          startNewGame();
+          alert("Try again?");
+
+         
+        }
+        
+        
+		};
+
+      function startNewGame() {
+     
+              if(+count > 100 ) {
+                scoreStars(3);
+               
+              }
+              else if(+count > 50 ) {
+                 scoreStars(2);
+                }
+              else {
+                scoreStars(1);
+                
+              }
+             
+         timeTicks = 0;
+         count =0;
+        
+      }
+
+      function scoreStars(numStar) {
+       
+        STAR_X = 10;
+
+        collect.active =false;
+        player.active =false;
+
+        canvas.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        canvas1.clearRect(0, 0, CANVAS1_WIDTH, CANVAS1_HEIGHT);
+        
+
+        var c = document.getElementById("tCanvas");
+        var context = c.getContext("2d"); 
+        context.fillStyle = "green";
+        context.fillText("Score: " +count ,10,50);
+        console.log(+count);
+        
+        // The problem here is that imageobj is loaded after the browser reloads and I want it to happen before that..
+        //hmmm or maybe just show the score but stars are cooler right?
+        for (i=0; i < numStar; i++){
+            var imageObj = new Image();
+            imageObj.onload = function() {
+
+                var c1 = document.getElementById("tCanvas");
+                var context1 = c1.getContext("2d");
+                context1.drawImage(imageObj, STAR_X, STAR_Y);
+               STAR_X = STAR_X +30;
+              Sound.play("poing");
+           
+            };
+            imageObj.src  = "images/star.jpeg";
+
+
+        }
+       
+       
+       
+      }
+
+			function draw() {
+ 		
+ 				canvas.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+  				player.draw();
+
+  				collection.forEach(function(collect) {
+    				collect.draw();
+  					});
+
+			}
+
+			function collides(a, b) {
+          		return a.x < b.x + b.width &&
+            	a.x + a.width > b.x &&
+            	a.y < b.y + b.height &&
+            	a.y + a.height > b.y;
+        	}
+        	
+
+        	
+       function handleCollisions() {
+          		collection.forEach(function(collect) {
+            	     if(collides(collect, player)) {
+                      count =count +1;
+
+              		    collect.explode();
+                      player.explode();
+
+                             
+                    }
+          		
+              });
+        }
+
+
+	</script>
+
+ </html>
